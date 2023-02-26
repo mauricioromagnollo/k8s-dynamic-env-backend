@@ -1,0 +1,45 @@
+{{ if eq .Values.deployType "development" }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ship-manager-database
+  labels:
+    app: ship-manager-database
+    version: {{ .Values.imageTag }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ship-manager-database
+  template:
+    metadata:
+      name: ship-manager-database
+      labels:
+        app: ship-manager-database
+        version: {{ .Values.imageTag }}
+    spec:
+      containers:
+        - image: mongo
+          name: ship-manager-database
+          resources:
+            limits:
+              cpu: 512m
+              memory: 512Mi
+          ports:
+            - containerPort: 27017
+              name: mongodb
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ship-manager-database
+  labels:
+    app: ship-manager-database
+    version: {{ .Values.imageTag }}
+spec:
+  selector:
+    app: ship-manager-database
+  ports:
+    - port: 27017
+      targetPort: mongodb
+{{end}}
