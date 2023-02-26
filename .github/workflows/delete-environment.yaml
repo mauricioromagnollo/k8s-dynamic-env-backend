@@ -1,0 +1,44 @@
+name: Autoremove created environments on branch deletion
+
+on:
+  workflow_dispatch:
+  delete:
+    branchs-ignore:
+      - 'main'
+      - 'master'
+
+env:
+  IMAGE_NAME: ship-manager
+
+jobs:
+  delete:
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set env
+        id: tags
+        run: |
+          export REF=${{github.event.ref}}
+          echo tag=${GITHUB_REF#refs/tags/} >> $GITHUB_ENV
+
+      - name: Get AKS Credentials
+        uses: Azure/login@v1
+        with:
+          creds: ${{secrets.AZURE_CREDENTIALS}}
+
+      - uses: Azure/aks-set-context@v2
+        with:
+          resource-group: ${{secrets.AZURE_RESOURCE_GROUP}}
+          cluster-name: ${{secrets.AZURE_CLUSTER_NAME}}
+
+      - name: Install Helm
+        uses: Azure/setup-helm@v1
+        with:
+          version: v3.3.1
+
+      - name: Run Delete
+        run: |
+          helm delete --namespace test-${{env.tag}} ship-manager-${{env.tag}}
+          kubectl delete ns test-${{env.tag}}
